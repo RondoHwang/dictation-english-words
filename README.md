@@ -42,7 +42,7 @@
 dictation-words-app/
 ├─ server.js                  # 后端入口（API、鉴权、业务逻辑）
 ├─ package.json
-├─ backup_20260704.sql        # 数据库结构和示例数据
+├─ init_db.sql                # 数据库初始化脚本（建库建表）
 ├─ uploads/                   # Excel 临时上传目录
 └─ public/
 	 ├─ index.html              # 前端页面（学生端 + 管理端）
@@ -67,20 +67,18 @@ npm install
 
 ### 3. 准备数据库
 
-在 MySQL 中创建数据库并导入备份：
-
-```sql
-CREATE DATABASE IF NOT EXISTS dictation_app DEFAULT CHARACTER SET utf8mb4;
-```
+执行初始化脚本：
 
 ```bash
-mysql -u <用户名> -p dictation_app < backup_20260704.sql
+mysql -u <用户名> -p < init_db.sql
 ```
 
 说明：
 
-- `backup_20260704.sql` 已包含核心表结构：`users`、`admins`、`words`、`errors`、`dictation_sessions`、`dictation_records`
+- `init_db.sql` 会自动创建 `dictation_app` 数据库并建表
+- 包含核心表结构：`users`、`admins`、`words`、`errors`、`dictation_sessions`、`dictation_records`
 - 如 `admins` 表为空，服务启动时会自动创建默认管理员账号
+- 仓库默认不再提交 `backup_*.sql` 备份文件（避免误传数据库快照）
 
 ### 4. 配置环境变量（.env）
 
