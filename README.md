@@ -82,16 +82,27 @@ mysql -u <用户名> -p dictation_app < backup_20260704.sql
 - `backup_20260704.sql` 已包含核心表结构：`users`、`admins`、`words`、`errors`、`dictation_sessions`、`dictation_records`
 - 如 `admins` 表为空，服务启动时会自动创建默认管理员账号
 
-### 4. 修改后端配置
+### 4. 配置环境变量（.env）
 
-当前配置写在 `server.js` 顶部，请至少检查以下项：
+项目已改为通过环境变量读取敏感配置。
+
+推荐步骤：
+
+1. 复制 `.env.example` 为 `.env`
+2. 按你的本机环境填写数据库、JWT、短信配置
+3. 本地启动时会自动读取 `.env`
+
+关键变量如下：
 
 - `PORT`：服务端口（默认 `3000`）
-- `DEV_MODE`：开发模式（`true` 时验证码固定为 `123456`）
-- `JWT_SECRET`：用户 JWT 密钥
-- `ADMIN_SECRET`：管理员 JWT 密钥
-- `SMS_CONFIG`：腾讯云短信参数
-- MySQL 连接配置：`host`、`user`、`password`、`database`
+- `DEV_MODE`：开发模式，`true` 时验证码固定为 `123456`
+- `JWT_SECRET`：用户 JWT 密钥（必填）
+- `JWT_EXPIRES`：用户 token 过期时间（默认 `7d`）
+- `ADMIN_SECRET`：管理员 JWT 密钥（必填）
+- `DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`：数据库连接
+- `SMS_SECRET_ID`、`SMS_SECRET_KEY`、`SMS_SDK_APP_ID`、`SMS_SIGN_NAME`、`SMS_TEMPLATE_ID`、`SMS_REGION`：短信配置（`DEV_MODE=false` 时必填）
+
+`.env` 已被 `.gitignore` 忽略，不会被提交。
 
 ### 5. 启动项目
 
@@ -220,6 +231,34 @@ http://localhost:3000
 - 上传目录 `uploads/` 会自动创建，文件解析后会删除临时文件
 - 用户端和管理端共用同一前端应用，根据 token 状态切换视图
 
+## .env 使用说明
+
+### 1) 创建本地配置
+
+复制示例配置文件：
+
+- Windows PowerShell：`Copy-Item .env.example .env`
+- macOS / Linux：`cp .env.example .env`
+
+### 2) 最少需要填写哪些值
+
+最低可运行（本地开发）建议：
+
+- `DEV_MODE=true`
+- 正确的数据库连接：`DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`
+- 两个密钥：`JWT_SECRET`、`ADMIN_SECRET`
+
+### 3) 本地开发与生产差异
+
+- 本地开发：可使用 `DEV_MODE=true`，短信不走真实发送
+- 生产环境：必须设置 `DEV_MODE=false`，并填写全部短信配置
+
+### 4) 安全建议
+
+- 不要把 `.env` 上传到 GitHub
+- 不要在 README、Issue、截图中暴露密钥和数据库密码
+- 若密钥曾泄露，立即更换并重启服务
+
 ## 常见问题
 
 ### 1) 启动报数据库连接失败
@@ -227,14 +266,14 @@ http://localhost:3000
 请确认：
 
 - MySQL 服务已启动
-- `server.js` 中账号密码正确
+- `.env` 中数据库配置正确
 - `dictation_app` 数据库存在并已导入 SQL
 
 ### 2) 收不到短信验证码
 
-如果是本地开发，保持 `DEV_MODE = true`，验证码固定为 `123456`。
+如果是本地开发，保持 `.env` 中 `DEV_MODE=true`，验证码固定为 `123456`。
 
-若需真实短信，请正确填写 `SMS_CONFIG` 并将 `DEV_MODE` 改为 `false`。
+若需真实短信，请在 `.env` 正确填写短信相关变量，并将 `DEV_MODE=false`。
 
 ### 3) 管理员无法登录
 
