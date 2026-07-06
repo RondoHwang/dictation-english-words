@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>听写助手</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&family=ZCOOL+XiaoWei&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- ====== 认证页 ====== -->
+    <div id="auth-page" class="auth-page" style="display: none">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="auth-brand-icon">✦</div>
+          <h1 class="auth-title">听写助手</h1>
+          <p class="auth-subtitle">英语听写练习</p>
+        </div>
+        <div id="auth-student">
+          <div class="auth-tabs">
+            <button
+              class="auth-tab active"
+              data-tab="login"
+              onclick="switchAuthTab('login')"
+            >
+              登录
+            </button>
+            <button
+              class="auth-tab"
+              data-tab="register"
+              onclick="switchAuthTab('register')"
+            >
+              注册
+            </button>
+          </div>
+          <div id="login-form" class="auth-form">
+            <div id="login-pwd-mode">
+              <div class="form-group">
+                <label>手机号</label>
+                <input
+                  type="tel"
+                  id="login-phone"
+                  class="input"
+                  placeholder="请输入手机号"
+                  maxlength="11"
+                />
+              </div>
+              <div class="form-group">
+                <label>密码</label>
+                <input
+                  type="password"
+                  id="login-password"
+                  class="input"
+                  placeholder="请输入密码"
+                  onkeydown="if (event.key === 'Enter') loginWithPassword();"
+                />
+              </div>
+              <button
+                class="btn btn-primary btn-full"
+                onclick="loginWithPassword()"
+              >
+                登录
+              </button>
+              <div class="auth-links">
+                <a
+                  href="#"
+                  onclick="
+                    switchLoginMode('code');
+                    return false;
+                  "
+                  >验证码登录</a
+                >
+              </div>
+            </div>
+            <div id="login-code-mode" style="display: none">
+              <div class="form-group">
+                <label>手机号</label>
+                <input
+                  type="tel"
+                  id="login-code-phone"
+                  class="input"
+                  placeholder="请输入手机号"
+                  maxlength="11"
+                />
+              </div>
+              <div class="form-group">
+                <label>验证码</label>
+                <div class="code-row">
+                  <input
+                    type="text"
+                    id="login-code"
+                    class="input code-input"
+                    placeholder="请输入验证码"
+                    maxlength="6"
+                    onkeydown="if (event.key === 'Enter') loginWithCode();"
+                  />
+                  <button
+                    class="btn btn-secondary code-btn"
+                    id="login-send-btn"
+                    onclick="sendCode('login')"
+                  >
+                    发送验证码
+                  </button>
+                </div>
+              </div>
+              <button
+                class="btn btn-primary btn-full"
+                onclick="loginWithCode()"
+              >
+                登录
+              </button>
+              <div class="auth-links">
+                <a
+                  href="#"
+                  onclick="
+                    switchLoginMode('password');
+                    return false;
+                  "
+                  >密码登录</a
+                >
+              </div>
+            </div>
+          </div>
+          <div id="register-form" class="auth-form" style="display: none">
+            <div class="form-group">
+              <label>手机号</label
+              ><input
+                type="tel"
+                id="reg-phone"
+                class="input"
+                placeholder="请输入手机号"
+                maxlength="11"
+              />
+            </div>
+            <div class="form-group">
+              <label>验证码</label>
+              <div class="code-row">
+                <input
+                  type="text"
+                  id="reg-code"
+                  class="input code-input"
+                  placeholder="请输入验证码"
+                  maxlength="6"
+                />
+                <button
+                  class="btn btn-secondary code-btn"
+                  id="reg-send-btn"
+                  onclick="sendCode('register')"
+                >
+                  发送验证码
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>昵称</label
+              ><input
+                type="text"
+                id="reg-nickname"
+                class="input"
+                placeholder="如：小明"
+              />
+            </div>
+            <div class="form-group">
+              <label>密码</label
+              ><input
+                type="password"
+                id="reg-password"
+                class="input"
+                placeholder="至少6位密码"
+                onkeydown="if (event.key === 'Enter') doRegister();"
+              />
+            </div>
+            <button class="btn btn-primary btn-full" onclick="doRegister()">
+              注册
+            </button>
+          </div>
+          <div class="auth-footer">
+            <a
+              href="#"
+              onclick="
+                showAdminLogin();
+                return false;
+              "
+              >管理后台</a
+            >
+          </div>
+        </div>
+        <div id="auth-admin" style="display: none">
+          <div class="auth-form">
+            <h3
+              style="
+                text-align: center;
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 20px;
+                color: var(--text-2);
+              "
+            >
+              管理员登录
+            </h3>
+            <div class="form-group">
+              <label>账号</label
+              ><input
+                type="text"
+                id="admin-username"
+                class="input"
+                placeholder="请输入管理员账号"
+                onkeydown="if (event.key === 'Enter') adminLogin();"
+              />
+            </div>
+            <div class="form-group">
+              <label>密码</label
+              ><input
+                type="password"
+                id="admin-password"
+                class="input"
+                placeholder="请输入密码"
+                onkeydown="if (event.key === 'Enter') adminLogin();"
+              />
+            </div>
+            <button class="btn btn-primary btn-full" onclick="adminLogin()">
+              登录
+            </button>
+            <div class="auth-links">
+              <a
+                href="#"
+                onclick="
+                  showStudentAuth();
+                  return false;
+                "
+                >返回学生登录</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 学生主应用 ====== -->
+    <div id="app-wrapper" class="app" style="display: none">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-icon">✦</div>
+          <div>
+            <div class="brand-title">听写助手</div>
+            <div class="brand-sub">Dictation</div>
+          </div>
+        </div>
+        <nav class="sidebar-nav" id="sidebar-nav">
+          <a
+            class="nav-item active"
+            data-page="dictation"
+            onclick="navigateTo('dictation')"
+          >
+            <svg
+              class="nav-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+              <path
+                d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
+              /></svg
+            ><span>听写练习</span></a
+          >
+          <a class="nav-item" data-page="words" onclick="navigateTo('words')">
+            <svg
+              class="nav-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+              <path
+                d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"
+              /></svg
+            ><span>单词管理</span></a
+          >
+          <a class="nav-item" data-page="errors" onclick="navigateTo('errors')">
+            <svg
+              class="nav-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" /></svg
+            ><span>错题本</span></a
+          >
+          <a
+            class="nav-item"
+            data-page="history"
+            onclick="navigateTo('history')"
+          >
+            <svg
+              class="nav-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" /></svg
+            ><span>听写记录</span></a
+          >
+        </nav>
+        <div class="sidebar-user" id="sidebar-user">
+          <div class="user-avatar" id="user-avatar">-</div>
+          <div class="user-info">
+            <div class="user-name" id="user-name">-</div>
+            <div class="user-phone" id="user-phone">-</div>
+          </div>
+          <button class="logout-btn" onclick="doLogout()" title="退出登录">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
+        </div>
+      </aside>
+      <main class="content">
+        <!-- 听写页 -->
+        <div id="page-dictation" class="page active">
+          <div id="dict-setup" class="dict-phase">
+            <div class="page-header">
+              <h1 class="page-title">听写练习</h1>
+              <p class="page-desc">选择书本和单元，开始英语听写</p>
+            </div>
+            <div class="stats-bar">
+              <div class="stat-mini">
+                <span class="stat-mini-val" id="s-total">-</span
+                ><span class="stat-mini-lbl">总单词</span>
+              </div>
+              <div class="stat-mini">
+                <span class="stat-mini-val" id="s-error">-</span
+                ><span class="stat-mini-lbl">错题</span>
+              </div>
+              <div class="stat-mini">
+                <span class="stat-mini-val" id="s-sess">-</span
+                ><span class="stat-mini-lbl">已完成</span>
+              </div>
+            </div>
+            <div class="card setup-card">
+              <div class="form-group">
+                <label>选择书本</label
+                ><select
+                  id="dict-book"
+                  class="input"
+                  onchange="onDictBookChange()"
+                >
+                  <option value="__all__">全部书本</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>选择单元</label
+                ><select id="dict-unit" class="input">
+                  <option value="__all__">全部单元</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>听写模式</label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="dict-mode" value="normal" checked><span>正常听写</span></label>
+<label class="radio-option"><input type="radio" name="dict-mode" value="error_book"><span>仅听写错题</span></label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>单词数量</label>
+                <div class="count-row">
+                  <input
+                    type="number"
+                    id="dict-count"
+                    value="60"
+                    min="1"
+                    max="100"
+                    class="input count-input"
+                  />
+                  <div class="count-presets">
+                    <button
+                      class="btn btn-sm btn-ghost"
+                      onclick="document.getElementById('dict-count').value = 30"
+                    >
+                      30
+                    </button>
+                    <button
+                      class="btn btn-sm btn-ghost"
+                      onclick="document.getElementById('dict-count').value = 50"
+                    >
+                      50
+                    </button>
+                    <button
+                      class="btn btn-sm btn-ghost"
+                      onclick="document.getElementById('dict-count').value = 70"
+                    >
+                      70
+                    </button>
+                    <button
+                      class="btn btn-sm btn-ghost"
+                      onclick="
+                        document.getElementById('dict-count').value = 100
+                      "
+                    >
+                      100
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button
+                class="btn btn-primary btn-lg btn-full"
+                onclick="startDictation()"
+              >
+                开始听写
+              </button>
+            </div>
+          </div>
+          <div id="dict-active" class="dict-phase" style="display: none">
+            <div class="timer-bar">
+              <div class="timer" id="dict-timer">00:00</div>
+              <div class="timer-controls" id="timer-controls"></div>
+            </div>
+            <div class="words-grid" id="dict-words-grid"></div>
+          </div>
+          <div id="dict-review" class="dict-phase" style="display: none">
+            <div class="page-header">
+              <h1 class="page-title">批改</h1>
+              <p class="page-desc">点击标记答错的单词，然后确认提交</p>
+            </div>
+            <div class="review-grid" id="review-grid"></div>
+            <div class="review-footer">
+              <button
+                class="btn btn-primary btn-lg"
+                onclick="submitDictation()"
+              >
+                确认批改
+              </button>
+            </div>
+          </div>
+          <div id="dict-result" class="dict-phase" style="display: none">
+            <div id="result-content"></div>
+          </div>
+        </div>
+
+        <!-- 单词管理 -->
+        <div id="page-words" class="page">
+          <div class="page-header">
+            <h1 class="page-title">单词管理</h1>
+            <p class="page-desc">上传、查看、编辑和删除单词</p>
+          </div>
+          <div class="toolbar">
+            <div class="toolbar-left" style="gap: 8px">
+              <button class="btn btn-success" onclick="showAddWord()">
+                <svg
+                  class="btn-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                新增单词
+              </button>
+              <button
+                class="btn btn-primary"
+                onclick="document.getElementById('file-input').click()"
+              >
+                <svg
+                  class="btn-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                上传单词
+              </button>
+            </div>
+            <div class="toolbar-right">
+              <select
+                id="words-book-filter"
+                class="input input-sm"
+                onchange="onWordsBookFilterChange()"
+              >
+                <option value="">全部书本</option>
+              </select>
+              <select
+                id="words-unit-filter"
+                class="input input-sm"
+                onchange="fetchWords()"
+              >
+                <option value="">全部单元</option>
+              </select>
+              <input
+                type="text"
+                id="words-search"
+                class="input input-sm"
+                placeholder="搜索单词…"
+                oninput="debounceWordsSearch()"
+              />
+            </div>
+          </div>
+          <input
+            type="file"
+            id="file-input"
+            accept=".xlsx,.xls"
+            style="display: none"
+            onchange="handleFileUpload(event)"
+          />
+          <div class="card table-card">
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>中文</th>
+                    <th>英文</th>
+                    <th>音标</th>
+                    <th>书本</th>
+                    <th>单元</th>
+                    <th>听写次数</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="words-tbody">
+                  <tr>
+                    <td colspan="8" class="empty-state">加载中…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="words-pagination" class="pagination"></div>
+          </div>
+        </div>
+
+        <!-- 错题本 -->
+        <div id="page-errors" class="page">
+          <div class="page-header">
+            <h1 class="page-title">错题本</h1>
+            <p class="page-desc">连续答对 3 次自动移除</p>
+          </div>
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <select
+                id="errors-book-filter"
+                class="input input-sm"
+                onchange="onErrorsBookFilterChange()"
+              >
+                <option value="">全部书本</option>
+              </select>
+              <select
+                id="errors-unit-filter"
+                class="input input-sm"
+                onchange="fetchErrors()"
+              >
+                <option value="">全部单元</option>
+              </select>
+              <input
+                type="text"
+                id="errors-search"
+                class="input input-sm"
+                placeholder="搜索单词…"
+                oninput="debounceErrorsSearch()"
+              />
+            </div>
+          </div>
+          <div class="card table-card">
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>中文</th>
+                    <th>英文</th>
+                    <th>音标</th>
+                    <th>书本</th>
+                    <th>单元</th>
+                    <th>错误次数</th>
+                    <th>连续正确</th>
+                  </tr>
+                </thead>
+                <tbody id="errors-tbody">
+                  <tr>
+                    <td colspan="8" class="empty-state">加载中…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 听写记录 -->
+        <div id="page-history" class="page">
+          <div class="page-header">
+            <h1 class="page-title">听写记录</h1>
+            <p class="page-desc">查看历次听写成绩</p>
+          </div>
+          <div class="card table-card">
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>日期</th>
+                    <th>书本</th>
+                    <th>单元</th>
+                    <th>模式</th>
+                    <th>总数</th>
+                    <th>正确</th>
+                    <th>错误</th>
+                    <th>正确率</th>
+                    <th>用时</th>
+                  </tr>
+                </thead>
+                <tbody id="history-tbody">
+                  <tr>
+                    <td colspan="9" class="empty-state">加载中…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ====== 管理后台 ====== -->
+    <div id="admin-wrapper" style="display: none">
+      <header class="admin-header">
+        <div class="admin-header-left">
+          <div class="admin-brand-icon">✦</div>
+          <h1 class="admin-brand-title">听写助手 · 管理后台</h1>
+        </div>
+        <div class="admin-header-right">
+          <span class="admin-username" id="admin-display-name">管理员</span>
+          <button
+            class="btn btn-sm btn-ghost admin-logout-btn"
+            onclick="adminLogout()"
+          >
+            退出
+          </button>
+        </div>
+      </header>
+      <div class="admin-content">
+        <div class="admin-stats">
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="as-users">-</div>
+            <div class="admin-stat-lbl">注册用户</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="as-words">-</div>
+            <div class="admin-stat-lbl">总单词数</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="as-sessions">-</div>
+            <div class="admin-stat-lbl">听写次数</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="as-time">-</div>
+            <div class="admin-stat-lbl">总听写时长</div>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">用户列表</h2>
+            <div class="admin-toolbar">
+              <input
+                type="text"
+                id="admin-user-search"
+                class="input input-sm"
+                placeholder="搜索手机号或昵称…"
+                oninput="debounceAdminSearch()"
+              />
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table admin-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>昵称</th>
+                  <th>手机号</th>
+                  <th>注册时间</th>
+                  <th>单词</th>
+                  <th>书本</th>
+                  <th>听写</th>
+                  <th>总时长</th>
+                  <th>正确率</th>
+                  <th>错题</th>
+                  <th>最近活跃</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <tr>
+                  <td colspan="12" class="empty-state">加载中…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-overlay" class="modal-overlay">
+      <div class="modal">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+    <div id="toast-container"></div>
+    <script src="js/app.js"></script>
+  </body>
+</html>
