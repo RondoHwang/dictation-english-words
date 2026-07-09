@@ -127,9 +127,17 @@ function adminLogout() { clearAdminAuth(); showView('auth'); toast('已退出管
 function updateSidebarUser() {
     if (!currentUser) try { currentUser = JSON.parse(localStorage.getItem('auth_user')); } catch {}
     if (currentUser) {
-        document.getElementById('user-avatar').textContent = (currentUser.nickname || '?').charAt(0).toUpperCase();
-        document.getElementById('user-name').textContent = currentUser.nickname || '用户';
-        document.getElementById('user-phone').textContent = currentUser.phone || '';
+        const avatarChar = (currentUser.nickname || '?').charAt(0).toUpperCase();
+        const name = currentUser.nickname || '用户';
+        const phone = currentUser.phone || '';
+        // 桌面端侧边栏
+        document.getElementById('user-avatar').textContent = avatarChar;
+        document.getElementById('user-name').textContent = name;
+        document.getElementById('user-phone').textContent = phone;
+        // 移动端顶部栏
+        document.getElementById('mobile-user-avatar').textContent = avatarChar;
+        document.getElementById('mobile-user-name').textContent = name;
+        document.getElementById('mobile-user-phone').textContent = phone;
     }
 }
 
@@ -302,12 +310,16 @@ async function handleFileUpload(event) {
 }
 
 function showAddWord() {
+    const filterBook = document.getElementById('words-book-filter')?.value || '';
+    const filterUnit = document.getElementById('words-unit-filter')?.value || '';
+    const defaultBook = (filterBook && filterBook !== '__all__') ? filterBook : '';
+    const defaultUnit = (filterUnit && filterUnit !== '__all__') ? filterUnit : '';
     openModal(`<h2 class="modal-title">新增单词</h2>
         <div class="form-group"><label>中文</label><input type="text" id="add-cn" class="input" placeholder="请输入中文"></div>
         <div class="form-group"><label>英文</label><input type="text" id="add-en" class="input" style="font-family:var(--font-mono)" placeholder="请输入英文"></div>
         <div class="form-group"><label>音标</label><input type="text" id="add-ph" class="input" style="font-family:var(--font-mono)" placeholder="如：/æp.l/"></div>
-        <div class="form-group"><label>书本</label><input type="text" id="add-book" class="input" placeholder="如：八年级上册"></div>
-        <div class="form-group"><label>单元</label><input type="text" id="add-unit" class="input" placeholder="如：Unit2"></div>
+        <div class="form-group"><label>书本</label><input type="text" id="add-book" class="input" placeholder="如：八年级上册" value="${esc(defaultBook)}"></div>
+        <div class="form-group"><label>单元</label><input type="text" id="add-unit" class="input" placeholder="如：Unit2" value="${esc(defaultUnit)}"></div>
         <div class="modal-actions">
             <button class="btn btn-secondary" onclick="closeModal()">取消</button>
             <button class="btn btn-primary" onclick="addWord()">确认添加</button>
@@ -330,11 +342,15 @@ async function addWord() {
 }
 
 function showUploadPreview(data) {
+    const filterBook = document.getElementById('words-book-filter')?.value || '';
+    const filterUnit = document.getElementById('words-unit-filter')?.value || '';
+    const defaultBook = (filterBook && filterBook !== '__all__') ? filterBook : '';
+    const defaultUnit = (filterUnit && filterUnit !== '__all__') ? filterUnit : '';
     openModal(`<h2 class="modal-title">确认上传</h2>
         <p class="modal-desc">解析到 <strong>${data.words.length}</strong> 个有效单词（共 ${data.totalRows} 行）</p>
         ${data.parseErrors.length ? `<div class="parse-errors">${data.parseErrors.slice(0,5).map(e=>`<p>${esc(e)}</p>`).join('')}${data.parseErrors.length>5?`<p>…还有 ${data.parseErrors.length-5} 条</p>`:''}</div>` : ''}
-        <div class="form-group"><label>书本名称</label><input type="text" id="upload-book" class="input" placeholder="如：八年级上册"></div>
-        <div class="form-group"><label>单元</label><input type="text" id="upload-unit" class="input" placeholder="如：Unit2"></div>
+        <div class="form-group"><label>书本名称</label><input type="text" id="upload-book" class="input" placeholder="如：八年级上册" value="${esc(defaultBook)}"></div>
+        <div class="form-group"><label>单元</label><input type="text" id="upload-unit" class="input" placeholder="如：Unit2" value="${esc(defaultUnit)}"></div>
         <div class="preview-wrapper"><table class="preview-table"><thead><tr><th>中文</th><th>英文</th><th>音标</th></tr></thead>
         <tbody>${data.words.slice(0,10).map(w=>`<tr><td>${esc(w.chinese)}</td><td>${esc(w.english)}</td><td>${esc(w.phonetic)||'—'}</td></tr>`).join('')}
         ${data.words.length>10?`<tr><td colspan="3" class="text-muted text-center">…还有 ${data.words.length-10} 个</td></tr>`:''}</tbody></table></div>
@@ -509,6 +525,7 @@ async function loadAdminDashboard() {
         document.getElementById('as-sessions').textContent = stats.totalSessions;
         document.getElementById('as-time').textContent = fmtTime(stats.totalTime);
         adminUsersCache = users; renderAdminUsers(users);
+        loadAdminBooks();
     } catch (e) { toast(e.message, 'error'); clearAdminAuth(); showView('auth'); }
 }
 
@@ -578,6 +595,30 @@ async function deleteUser(uid, name) {
     if (!confirm(`确定删除用户"${name}"吗？\n该操作将删除该用户的所有数据且不可恢复！`)) return;
     try { await api(`/api/admin/users/${uid}`, 'DELETE', undefined, adminToken); toast(`已删除用户"${name}"`, 'success'); loadAdminDashboard(); }
     catch (e) { toast(e.message, 'error'); }
+}
+
+// ---- 公共书本管理 ----
+async function loadAdminBooks() {
+    try {
+        const books = await api('/api/admin/books/all', 'GET', undefined, adminToken);
+        const tbody = document.getElementById('admin-books-tbody');
+        if (!books.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">暂无书本数据（用户还未上传单词）</td></tr>'; return; }
+        tbody.innerHTML = books.map(b => `<tr>
+            <td><strong>${esc(b.book)}</strong></td>
+            <td class="text-center">${b.word_count}</td>
+            <td class="text-center">${b.user_count}</td>
+            <td>${b.isPublic ? '<span style="color:var(--success);font-weight:600">🌐 公共</span>' : '<span class="text-muted">🔒 私有</span>'}</td>
+            <td><button class="btn btn-sm ${b.isPublic ? 'btn-ghost btn-danger-text' : 'btn-primary'}" onclick="togglePublicBook('${esc(b.book).replace(/'/g, "\\'")}')">${b.isPublic ? '取消公共' : '设为公共'}</button></td>
+        </tr>`).join('');
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function togglePublicBook(book) {
+    try {
+        const result = await api('/api/admin/books/toggle-public', 'POST', { book }, adminToken);
+        toast(result.action === 'added' ? `「${book}」已设为公共` : `「${book}」已取消公共`, 'success');
+        loadAdminBooks();
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 /* ==========================================================

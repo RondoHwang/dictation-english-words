@@ -158,6 +158,12 @@ async function ensureDefaultAdmin() {
   }
 }
 
+async function isPublicBook(book) {
+  if (!book) return false;
+  const [r] = await pool.query("SELECT id FROM public_books WHERE book=?", [book]);
+  return r.length > 0;
+}
+
 /* ===================== 公开路由 ===================== */
 
 app.post("/api/auth/send-code", async (req, res) => {
@@ -372,11 +378,19 @@ app.get("/api/auth/me", authenticateUser, async (req, res) => {
 // ---- 书本/单元 ----
 app.get("/api/books", async (req, res) => {
   try {
-    const [rows] = await pool.query(
+    const [myBooks] = await pool.query(
       'SELECT book, COUNT(*) AS word_count FROM words WHERE user_id=? AND book!="" GROUP BY book ORDER BY MIN(created_at) DESC',
       [req.userId],
     );
-    res.json(rows);
+    const [pubBooks] = await pool.query(
+      "SELECT pb.book, (SELECT COUNT(*) FROM words w WHERE w.book=pb.book) AS word_count FROM public_books pb ORDER BY pb.created_at DESC",
+    );
+    const merged = new Map();
+    for (const b of myBooks) merged.set(b.book, b);
+    for (const b of pubBooks) {
+      if (!merged.has(b.book)) merged.set(b.book, b);
+    }
+    res.json([...merged.values()]);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -386,10 +400,15 @@ app.get("/api/units", async (req, res) => {
   try {
     const { book } = req.query;
     if (!book) return res.json([]);
-    const [rows] = await pool.query(
-      "SELECT unit, COUNT(*) AS word_count FROM words WHERE user_id=? AND book=? GROUP BY unit ORDER BY MIN(created_at)",
-      [req.userId, book],
-    );
+    let query, params;
+    if (await isPublicBook(book)) {
+      query = "SELECT unit, COUNT(*) AS word_count FROM words WHERE book=? GROUP BY unit ORDER BY MIN(created_at)";
+      params = [book];
+    } else {
+      query = "SELECT unit, COUNT(*) AS word_count FROM words WHERE user_id=? AND book=? GROUP BY unit ORDER BY MIN(created_at)";
+      params = [req.userId, book];
+    }
+    const [rows] = await pool.query(query, params);
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -485,9 +504,10 @@ app.get("/api/words", async (req, res) => {
     } = req.query;
     const p = Math.max(1, +page),
       s = Math.min(200, Math.max(1, +pageSize));
-    let where = "user_id=?",
-      params = [req.userId];
-    if (book) {
+    const isPublic = book && (await isPublicBook(book));
+    let where = isPublic ? "book=?" : "user_id=?",
+      params = isPublic ? [book] : [req.userId];
+    if (book && !isPublic) {
       where += " AND book=?";
       params.push(book);
     }
@@ -597,6 +617,7 @@ app.post("/api/dictation/select", async (req, res) => {
   try {
     const { book, unit, count = 30, mode = "normal" } = req.body;
     const limit = Math.max(1, Math.min(100, +count));
+    const isPublic = book && book !== "__all__" && (await isPublicBook(book));
 
     // 记住书本
     if (book && book !== "__all__") {
@@ -605,16 +626,18 @@ app.post("/api/dictation/select", async (req, res) => {
         .catch(() => {});
     }
 
-    let sql,
-      params = [req.userId];
+    let sql, params;
     if (mode === "error_book") {
       sql = `SELECT w.id,w.chinese,w.phonetic,w.english,w.book,w.unit,e.error_count,e.consecutive_correct
                    FROM errors e JOIN words w ON e.word_id=w.id WHERE e.is_active=1 AND w.user_id=?`;
+      params = [req.userId];
     } else {
-      sql =
-        "SELECT id,chinese,phonetic,english,book,unit,dictation_count FROM words WHERE user_id=?";
+      sql = isPublic
+        ? "SELECT id,chinese,phonetic,english,book,unit,dictation_count FROM words WHERE book=?"
+        : "SELECT id,chinese,phonetic,english,book,unit,dictation_count FROM words WHERE user_id=?";
+      params = isPublic ? [book] : [req.userId];
     }
-    if (book && book !== "__all__") {
+    if (book && book !== "__all__" && !isPublic) {
       sql += ` AND ${mode === "error_book" ? "w." : ""}book=?`;
       params.push(book);
     }
@@ -940,6 +963,49 @@ app.delete("/api/admin/users/:id", authenticateAdmin, async (req, res) => {
     res.status(500).json({ error: e.message });
   } finally {
     conn.release();
+  }
+});
+
+// ---- 公共书本管理 ----
+app.get("/api/admin/books/public", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT pb.*, (SELECT COUNT(*) FROM words w WHERE w.book=pb.book) AS word_count, (SELECT COUNT(DISTINCT w.user_id) FROM words w WHERE w.book=pb.book) AS user_count FROM public_books pb ORDER BY pb.created_at DESC",
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/admin/books/toggle-public", authenticateAdmin, async (req, res) => {
+  try {
+    const { book } = req.body;
+    if (!book?.trim()) return res.status(400).json({ error: "请输入书本名称" });
+    const [ex] = await pool.query("SELECT id FROM public_books WHERE book=?", [book.trim()]);
+    if (ex.length) {
+      await pool.query("DELETE FROM public_books WHERE book=?", [book.trim()]);
+      res.json({ success: true, action: "removed", book: book.trim() });
+    } else {
+      await pool.query("INSERT INTO public_books(book,created_by) VALUES(?,?)", [book.trim(), req.adminId]);
+      res.json({ success: true, action: "added", book: book.trim() });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 获取所有书本列表（用于管理员选择哪些设为公共）
+app.get("/api/admin/books/all", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT DISTINCT book, COUNT(*) AS word_count, COUNT(DISTINCT user_id) AS user_count FROM words WHERE book!='' GROUP BY book ORDER BY book",
+    );
+    const [pub] = await pool.query("SELECT book FROM public_books");
+    const pubSet = new Set(pub.map(r => r.book));
+    res.json(rows.map(r => ({ ...r, isPublic: pubSet.has(r.book) })));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

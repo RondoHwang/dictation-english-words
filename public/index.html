@@ -243,6 +243,23 @@
 
     <!-- ====== 学生主应用 ====== -->
     <div id="app-wrapper" class="app" style="display: none">
+      <!-- 移动端顶部用户栏 -->
+      <header class="mobile-top-bar" id="mobile-top-bar">
+        <div class="mobile-user-left">
+          <div class="user-avatar" id="mobile-user-avatar">-</div>
+          <div class="user-info">
+            <div class="user-name" id="mobile-user-name">-</div>
+            <div class="user-phone" id="mobile-user-phone">-</div>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="退出登录">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
+      </header>
       <aside class="sidebar">
         <div class="sidebar-brand">
           <div class="brand-icon">✦</div>
@@ -727,6 +744,28 @@
                 <tr>
                   <td colspan="12" class="empty-state">加载中…</td>
                 </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">📚 公共书本管理</h2>
+          </div>
+          <p style="color:var(--text-2);font-size:14px;margin:0 0 16px 0">设为公共后，所有用户都能看到该书中的全部单词。</p>
+          <div class="table-wrapper">
+            <table class="data-table admin-table">
+              <thead>
+                <tr>
+                  <th>书本名称</th>
+                  <th>单词数</th>
+                  <th>用户数</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="admin-books-tbody">
+                <tr><td colspan="5" class="empty-state">加载中…</td></tr>
               </tbody>
             </table>
           </div>

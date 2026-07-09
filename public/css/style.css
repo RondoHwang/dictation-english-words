@@ -65,7 +65,17 @@ h1,h2,h3{line-height:1.3}
 .logout-btn{background:none;border:none;color:var(--sidebar-text);cursor:pointer;padding:6px;border-radius:6px;transition:var(--tr);display:flex;align-items:center;justify-content:center}
 .logout-btn:hover{background:var(--sidebar-hover);color:#fff}
 
-/* Pages & Cards */
+/* === 移动端顶部用户栏 === */
+.mobile-top-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:110;background:linear-gradient(180deg,#1b2038,#111729);padding:10px 16px;box-shadow:0 2px 16px rgba(0,0,0,.15);align-items:center;justify-content:space-between}
+.mobile-user-left{display:flex;align-items:center;gap:10px}
+.mobile-top-bar .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--sidebar-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.mobile-top-bar .user-info{min-width:0}
+.mobile-top-bar .user-name{font-size:14px;font-weight:600;color:#fff}
+.mobile-top-bar .user-phone{font-size:11px;color:var(--sidebar-text)}
+.mobile-top-bar .logout-btn{background:none;border:none;color:var(--sidebar-text);cursor:pointer;padding:6px;border-radius:6px;transition:var(--tr);display:flex;align-items:center;justify-content:center}
+.mobile-top-bar .logout-btn:hover{background:var(--sidebar-hover);color:#fff}
+
+.content{margin-left:260px;padding:32px 40px;min-height:100vh;background:var(--bg)}
 .page{display:none;animation:fadeUp .35s var(--ease)}.page.active{display:block}
 .page-header{margin-bottom:28px}
 .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:28px}
@@ -243,14 +253,17 @@ select.input{cursor:pointer;appearance:auto}
     .review-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.admin-stats{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:768px){
+    html,body{overflow:hidden;height:100%}
+    .app{height:100%;overflow:hidden}
+    .mobile-top-bar{display:flex}
     .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;width:100%;height:auto;flex-direction:column;box-shadow:0 -2px 16px rgba(0,0,0,.12);background:#1b2038}
     .sidebar-brand{display:none}
-    .sidebar-nav{display:flex;flex-direction:row;width:100%;justify-content:space-around;align-items:center;padding:4px 0;order:1}
+    .sidebar-nav{display:flex;flex-direction:row;width:100%;justify-content:space-around;align-items:center;padding:4px 0;order:0}
     .nav-item{flex-direction:column;gap:3px;padding:8px 6px;border-left:none;border-top:2px solid transparent;font-size:11px}
     .nav-item.active{border-top-color:var(--sidebar-accent);border-left-color:transparent;background:transparent}
     .nav-icon{width:20px;height:20px}
-    .sidebar-user{order:0;justify-content:center;padding:8px 20px;border-top:none;border-bottom:1px solid rgba(255,255,255,.06)}
-    .content{margin-left:0;margin-bottom:120px;padding:20px 16px}
+    .sidebar-user{display:none}
+    .content{margin-left:0;margin-top:52px;padding:16px;min-height:0;height:calc(100vh - 52px - 64px);overflow-y:auto;-webkit-overflow-scrolling:touch}
     .page-title{font-size:22px}
     .toolbar{flex-direction:column;align-items:stretch}
     .toolbar-right{flex-wrap:wrap}.toolbar-right .input-sm{width:100%}
@@ -262,8 +275,12 @@ select.input{cursor:pointer;appearance:auto}
     .result-stats{grid-template-columns:repeat(2,1fr)}.stat-val{font-size:26px}
     .count-row{flex-wrap:wrap}.detail-meta{flex-direction:column;gap:6px}
     .auth-card{padding:28px 24px}
-    .admin-header{padding:0 16px;height:56px}.admin-brand-title{font-size:14px}
-    .admin-content{padding:20px 16px}.admin-stats{grid-template-columns:repeat(2,1fr)}
+    #admin-wrapper{display:block!important;height:100%;width:100%;overflow:hidden;position:relative}
+    .admin-header{padding:0 16px;height:52px;position:absolute;top:0;left:0;right:0;z-index:10}
+    .admin-brand-title{font-size:14px}
+    .admin-content{position:absolute;top:52px;left:0;right:0;bottom:0;padding:16px;overflow:auto;-webkit-overflow-scrolling:touch}
+    .admin-card{overflow:visible}
+    .admin-stats{grid-template-columns:repeat(2,1fr)}
     .admin-stat-val{font-size:28px}
     .admin-card-header{flex-direction:column;gap:12px;align-items:stretch}
     .admin-toolbar .input-sm{width:100%}
